@@ -8,7 +8,9 @@ import 'package:frontend/model/chat_message_model.dart';
 import 'package:frontend/model/message_item_model.dart';
 import 'package:frontend/provider/auth_provider.dart';
 import 'package:frontend/repositry/ai_repositry.dart';
+import 'package:frontend/repositry/call_repositry.dart';
 import 'package:frontend/repositry/chat_repositry.dart';
+import 'package:frontend/screens/home/active_call_screen.dart';
 import 'package:frontend/widget/chat_thread_item_widget.dart';
 import 'package:frontend/widget/user_avatar_widget.dart';
 
@@ -287,6 +289,48 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     });
   }
 
+  Future<void> _startAudioCall() async {
+    await _startCall('audio');
+  }
+
+  Future<void> _startVideoCall() async {
+    await _startCall('video');
+  }
+
+  Future<void> _startCall(String callType) async {
+    final recipientId = widget.contact.userId;
+    final roomId = _roomId;
+
+    if (recipientId == null || recipientId.trim().isEmpty) {
+      _showSnackBar('This contact cannot receive calls yet.');
+      return;
+    }
+
+    if (roomId == null || roomId.trim().isEmpty) {
+      _showSnackBar('Chat is still loading.');
+      return;
+    }
+
+    try {
+      final session = await ref
+          .read(callRepositryProvider)
+          .createCall(
+            recipientId: recipientId,
+            conversationId: roomId,
+            callType: callType,
+          );
+
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => ActiveCallScreen(session: session)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      _showSnackBar('Could not start the call.');
+    }
+  }
+
   Future<void> _summarizeConversation() async {
     final roomId = _roomId;
     if (roomId == null || roomId.trim().isEmpty) {
@@ -501,6 +545,92 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildHeaderIcon({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback? onPressed,
+    required Color color,
+  }) {
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      visualDensity: VisualDensity.compact,
+      icon: Icon(icon, size: 30, color: color),
+    );
+  }
+
+  Widget _buildAiHeaderMenu(ColorScheme colorScheme) {
+    return PopupMenuButton<String>(
+      tooltip: 'AI tools',
+      enabled: !_aiLoading,
+      icon: _aiLoading
+          ? SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: colorScheme.primary,
+              ),
+            )
+          : Icon(
+              Icons.auto_awesome_rounded,
+              size: 28,
+              color: colorScheme.primary,
+            ),
+      onSelected: (value) {
+        switch (value) {
+          case 'summary':
+            _summarizeConversation();
+            break;
+          case 'reply':
+          case 'meeting':
+            _showSnackBar('This AI tool is coming next.');
+            break;
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'summary',
+          child: Row(
+            children: [
+              Icon(Icons.notes_rounded, size: 20, color: colorScheme.primary),
+              const SizedBox(width: 10),
+              const Text('Summarize chat'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'reply',
+          child: Row(
+            children: [
+              Icon(
+                Icons.mark_chat_unread_outlined,
+                size: 20,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(width: 10),
+              const Text('Need reply'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'meeting',
+          child: Row(
+            children: [
+              Icon(
+                Icons.event_available_outlined,
+                size: 20,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(width: 10),
+              const Text('Possible meeting'),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -723,17 +853,19 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                       ],
                     ),
                   ),
-                  Icon(
-                    Icons.call_outlined,
-                    size: 34,
+                  _buildHeaderIcon(
+                    icon: Icons.call_outlined,
+                    tooltip: 'Audio call',
+                    onPressed: _startAudioCall,
                     color: colorScheme.onSurface,
                   ),
-                  const SizedBox(width: 24),
-                  Icon(
-                    Icons.videocam_outlined,
-                    size: 34,
+                  _buildHeaderIcon(
+                    icon: Icons.videocam_outlined,
+                    tooltip: 'Video call',
+                    onPressed: _startVideoCall,
                     color: colorScheme.onSurface,
                   ),
+                  _buildAiHeaderMenu(colorScheme),
                 ],
               ),
             ),

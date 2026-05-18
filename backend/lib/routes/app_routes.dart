@@ -2,6 +2,7 @@
 import 'package:flint_dart/flint_dart.dart';
 import 'ai_routes.dart';
 import 'auth_routes.dart';
+import 'call_routes.dart';
 import 'chat_routes.dart';
 import 'status_routes.dart';
 import 'user_routes.dart';
@@ -29,6 +30,7 @@ class AppRoutes extends RouteGroup {
     );
 
     app.routes(ChatRoutes());
+    app.routes(CallRoutes());
     app.routes(AiRoutes());
     app.routes(StatusRoutes());
   }

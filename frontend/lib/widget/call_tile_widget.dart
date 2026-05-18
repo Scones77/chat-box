@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:frontend/core/constant/app_colors.dart';
 import 'package:frontend/core/constant/app_images.dart';
 import 'package:frontend/core/constant/app_style.dart';
-import 'package:frontend/core/theme/app_theme_colors.dart';
 import 'package:frontend/model/call_item_model.dart';
 import 'package:frontend/widget/image_widget.dart';
 import 'package:frontend/widget/user_avatar_widget.dart';
@@ -25,11 +24,6 @@ class CallTileWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final palette = Theme.of(context).extension<AppThemeColors>()!;
-
-    final callColor = isMissed ? Colors.red : Colors.green;
-
     return Material(
       color: Colors.transparent,
       child: InkWell(

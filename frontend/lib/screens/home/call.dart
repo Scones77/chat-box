@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/core/constant/app_colors.dart';
 import 'package:frontend/core/constant/app_images.dart';
 import 'package:frontend/core/constant/app_style.dart';
-import 'package:frontend/model/call_item_model.dart';
+import 'package:frontend/provider/call_provider.dart';
 import 'package:frontend/widget/call_tile_widget.dart';
 import 'package:frontend/widget/circle_icon_button_widget.dart';
 
@@ -15,62 +15,10 @@ class CallScreen extends ConsumerStatefulWidget {
 }
 
 class _CallScreenState extends ConsumerState<CallScreen> {
-  final List<CallItemModel> calls = [
-    CallItemModel(
-      name: "Team Align",
-      callTime: "Today, 09:30 AM",
-      initials: "TA",
-      avatarColor: Colors.blue,
-      isIncoming: true,
-      isVideoCall: true,
-      imagePath: '',
-    ),
-    CallItemModel(
-      name: "Jhon Abraham",
-      callTime: "Today, 07:30 AM",
-      initials: "JA",
-      avatarColor: Colors.orange,
-      isIncoming: false,
-      imagePath: '',
-    ),
-    CallItemModel(
-      name: "Sabila Sayma",
-      callTime: "Yesterday, 07:35 PM",
-      initials: "SS",
-      avatarColor: Colors.pink,
-      isMissed: true,
-      isIncoming: true,
-      imagePath: '',
-    ),
-    CallItemModel(
-      name: "Alex Linderson",
-      callTime: "Monday, 09:30 AM",
-      initials: "AL",
-      avatarColor: Colors.grey,
-      isIncoming: true,
-      imagePath: '',
-    ),
-    CallItemModel(
-      name: "John Borino",
-      callTime: "Monday, 09:30 AM",
-      initials: "JB",
-      avatarColor: Colors.brown,
-      isIncoming: false,
-      imagePath: '',
-    ),
-    CallItemModel(
-      name: "Jhon Abraham",
-      callTime: "03/07/22, 7:30AM",
-      initials: "JA",
-      avatarColor: Colors.orange,
-      isMissed: true,
-      isIncoming: false,
-      imagePath: '',
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final calls = ref.watch(recentCallsProvider);
+
     return Scaffold(
       backgroundColor: AppColors.black,
 
@@ -149,21 +97,56 @@ class _CallScreenState extends ConsumerState<CallScreen> {
                     const SizedBox(height: 10),
 
                     Expanded(
-                      child: ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        itemCount: calls.length,
-                        separatorBuilder: (_, __) =>
-                            Divider(color: Colors.grey.shade200, indent: 70),
-                        itemBuilder: (context, index) {
-                          final call = calls[index];
+                      child: calls.when(
+                        data: (items) {
+                          if (items.isEmpty) {
+                            return Center(
+                              child: Text(
+                                'No recent calls',
+                                style: AppStyle.circularMediumStyle.copyWith(
+                                  color: AppColors.grey,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            );
+                          }
 
-                          return CallTileWidget(
-                            contact: call,
-                            callTime: call.callTime,
-                            isMissed: call.isMissed,
-                            isVideoCall: call.isVideoCall,
+                          return RefreshIndicator(
+                            onRefresh: () async {
+                              ref.invalidate(recentCallsProvider);
+                            },
+                            child: ListView.separated(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                              itemCount: items.length,
+                              separatorBuilder: (_, _) => Divider(
+                                color: Colors.grey.shade200,
+                                indent: 70,
+                              ),
+                              itemBuilder: (context, index) {
+                                final call = items[index];
+
+                                return CallTileWidget(
+                                  contact: call,
+                                  callTime: call.callTime,
+                                  isMissed: call.isMissed,
+                                  isVideoCall: call.isVideoCall,
+                                );
+                              },
+                            ),
                           );
                         },
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (_, _) => Center(
+                          child: TextButton(
+                            onPressed: () {
+                              ref.invalidate(recentCallsProvider);
+                            },
+                            child: const Text('Retry loading calls'),
+                          ),
+                        ),
                       ),
                     ),
                   ],

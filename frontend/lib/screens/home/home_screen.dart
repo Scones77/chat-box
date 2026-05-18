@@ -4,10 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/core/constant/app_images.dart';
 import 'package:frontend/core/theme/theme.dart';
 import 'package:frontend/provider/home_provider.dart';
+import 'package:frontend/provider/call_provider.dart';
 import 'package:frontend/provider/recent_chat_provider.dart';
 import 'package:frontend/repositry/chat_repositry.dart';
+import 'package:frontend/model/call_session_model.dart';
 import 'package:frontend/screens/home/call.dart';
 import 'package:frontend/screens/home/contact.dart';
+import 'package:frontend/screens/home/incoming_call_screen.dart';
 import 'package:frontend/screens/home/message.dart';
 import 'package:frontend/screens/home/settings.dart';
 import 'package:frontend/widget/image_widget.dart';
@@ -28,6 +31,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   FlintWebSocketClient? _socket;
+  bool _showingIncomingCall = false;
 
   @override
   void initState() {
@@ -53,7 +57,51 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       debugPrint('chat notification error: $data');
     });
 
+    _socket?.on('call:incoming', _handleIncomingCall);
+    _socket?.on('call:ended', (_) => ref.invalidate(recentCallsProvider));
+    _socket?.on('call:rejected', (_) => ref.invalidate(recentCallsProvider));
+    _socket?.on('call:accepted', (_) => ref.invalidate(recentCallsProvider));
+
     await _socket?.connect();
+  }
+
+  Future<void> _handleIncomingCall(dynamic data) async {
+    if (!mounted || _showingIncomingCall) return;
+
+    final payload = _asMap(data);
+    final callMap = payload['call'] is Map
+        ? Map<String, dynamic>.from(payload['call'] as Map)
+        : <String, dynamic>{};
+
+    if (callMap.isEmpty) return;
+
+    final call = CallSessionModel.fromMap(callMap);
+    if (call.id.isEmpty) return;
+
+    _showingIncomingCall = true;
+    ref.invalidate(recentCallsProvider);
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => IncomingCallScreen(call: call),
+      ),
+    );
+
+    _showingIncomingCall = false;
+  }
+
+  Map<String, dynamic> _asMap(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      return data;
+    }
+
+    if (data is Map) {
+      return Map<String, dynamic>.from(data);
+    }
+
+    return <String, dynamic>{};
   }
 
   @override

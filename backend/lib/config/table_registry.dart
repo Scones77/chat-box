@@ -1,6 +1,7 @@
 import 'dart:isolate';
 
 import 'package:flint_dart/schema.dart';
+import 'package:backend/models/call.dart';
 import 'package:backend/models/chat_message.dart';
 import 'package:backend/models/user_model.dart';
 
@@ -16,5 +17,6 @@ void main(_, SendPort? sendPort) {
     Status().table,
     StatusRead().table,
     Conversation().table,
+    Call().table,
   ], _, sendPort);
 }
