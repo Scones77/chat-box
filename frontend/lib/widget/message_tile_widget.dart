@@ -15,6 +15,12 @@ class MessageTileWidget extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final palette = theme.extension<AppThemeColors>()!;
+    final hasUnread = item.unreadCount > 0;
+    final presenceColor = item.statusColor == const Color(0xFF1EDB76)
+        ? palette.online
+        : item.statusColor == const Color(0xFFFFC94D)
+        ? const Color(0xFFFFC94D)
+        : palette.offline;
 
     return Material(
       color: Colors.transparent,
@@ -43,9 +49,7 @@ class MessageTileWidget extends StatelessWidget {
                       width: 18,
                       height: 18,
                       decoration: BoxDecoration(
-                        color: item.statusColor == const Color(0xFF1EDB76)
-                            ? palette.online
-                            : palette.offline,
+                        color: presenceColor,
                         shape: BoxShape.circle,
                         border: Border.all(
                           color: palette.messageSheet,
@@ -65,7 +69,7 @@ class MessageTileWidget extends StatelessWidget {
                       item.name,
                       style: AppStyle.circularTextStyle(
                         size: 21,
-                        weight: FontWeight.w700,
+                        weight: hasUnread ? FontWeight.w800 : FontWeight.w600,
                         color: colorScheme.onSurface,
                       ),
                     ),
@@ -76,8 +80,10 @@ class MessageTileWidget extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: AppStyle.circularTextStyle(
                         size: 15,
-                        weight: FontWeight.w500,
-                        color: palette.secondaryText,
+                        weight: hasUnread ? FontWeight.w700 : FontWeight.w500,
+                        color: hasUnread
+                            ? colorScheme.onSurface
+                            : palette.secondaryText,
                       ),
                     ),
                   ],
@@ -91,8 +97,10 @@ class MessageTileWidget extends StatelessWidget {
                     item.time,
                     style: AppStyle.circularTextStyle(
                       size: 14,
-                      weight: FontWeight.w500,
-                      color: palette.secondaryText,
+                      weight: hasUnread ? FontWeight.w700 : FontWeight.w500,
+                      color: hasUnread
+                          ? colorScheme.primary
+                          : palette.secondaryText,
                     ),
                   ),
                   const SizedBox(height: 12),

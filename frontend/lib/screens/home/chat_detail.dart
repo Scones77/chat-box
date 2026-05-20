@@ -8,6 +8,7 @@ import 'package:frontend/model/chat_message_model.dart';
 import 'package:frontend/model/message_item_model.dart';
 import 'package:frontend/provider/auth_provider.dart';
 import 'package:frontend/provider/presence_provider.dart';
+import 'package:frontend/provider/recent_chat_provider.dart';
 import 'package:frontend/repositry/call_repositry.dart';
 import 'package:frontend/repositry/chat_repositry.dart';
 import 'package:frontend/screens/home/active_call_screen.dart';
@@ -116,6 +117,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         _historyError = historyError;
       });
       _scrollToBottom();
+      ref.invalidate(recentChatsProvider);
 
       await _connectSocket(chatRepository, roomId);
     } catch (e) {
@@ -194,6 +196,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
       setState(() {
         _messages.add(_decorateIncomingMessage(message));
       });
+      if (!message.isMe) {
+        _markOpenConversationRead();
+      }
       _scrollToBottom();
     });
 
@@ -221,6 +226,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     });
 
     await socket.connect();
+    _markOpenConversationRead();
   }
 
   List<ChatMessageModel> _decorateConversation(
@@ -287,6 +293,17 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _markOpenConversationRead() {
+    final socket = _socket;
+    final roomId = _roomId;
+    if (socket == null || roomId == null) {
+      return;
+    }
+
+    socket.emit('chat:mark_read', {'conversationId': roomId});
+    ref.invalidate(recentChatsProvider);
   }
 
   Future<void> _sendMessage() async {

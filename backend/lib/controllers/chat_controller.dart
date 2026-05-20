@@ -200,6 +200,30 @@ class ChatController {
       });
     });
 
+    socket.on('chat:mark_read', (dynamic payload) async {
+      final data = _asMap(payload);
+      final targetConversationId =
+          (data['conversationId'] ?? conversationId).toString().trim();
+
+      if (targetConversationId != conversationId) {
+        return;
+      }
+
+      final readPayload = await _markConversationRead(
+        conversationId: conversationId,
+        readerId: user.id,
+      );
+
+      if (readPayload != null) {
+        socket.emitToRoom(
+          conversationId,
+          'chat:read',
+          readPayload,
+          includeSelf: true,
+        );
+      }
+    });
+
     socket.on('chat:send', (dynamic payload) async {
       final data = _asMap(payload);
       final content = (data['content'] ?? data['text'] ?? '').toString().trim();

@@ -11,5 +11,5 @@ void main() {
   app.use(LoggerMiddleware());
 
   app.routes(AppRoutes());
-  app.listen(port: 3001, hotReload: true);
+  app.listen(port: 3003, hotReload: true);
 }

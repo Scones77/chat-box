@@ -218,6 +218,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       isVideoCall: call.isVideoCall,
     );
 
+    if (!mounted) return;
     await Navigator.push(
       context,
       MaterialPageRoute(
